@@ -26,7 +26,7 @@ cursor = connection.cursor()
 cursor.execute(f"SELECT UserData FROM UserProfile")
 userdata = cursor.fetchone()
 options = webdriver.ChromeOptions()
-#options.add_argument('--headless')
+options.add_argument('--headless')
 options.add_argument(f"user-data-dir={userdata[0]}")
 cursor.execute(f"SELECT ProfileDirectory FROM UserProfile")
 userDir = cursor.fetchone()
@@ -45,7 +45,6 @@ connection.commit()
 connection.close()
 
 login_success = False
-Nickname = ''
 thread_active = 0
 stop = False
 a = list()
@@ -123,15 +122,35 @@ def huita():
     print("PHPSESSID Value:", phpsessid_value)
 """
 def login():
+    global Balance
+    global hold_balance
+    global Nickname
+    global categories_count
+    global offers_count
+    hold_balance = 0
     driver.get('https://funpay.com/')
     driver.find_element('xpath', '//a[@class =\"dropdown-toggle user-link\"]').click()
     wait.until(EC.presence_of_element_located(('xpath', '//ul[@class = \'dropdown-menu\']//a[@class=\'user-link-dropdown\']'))).click()
+    categories = driver.find_elements('xpath', '//a[@class="btn btn-default btn-plus"]')
+    offers = driver.find_elements('xpath','//div[@class="tc-desc-text"]')
+    offers_count = len(offers)
+    categories_count = len(categories)
     nickname = wait.until(EC.presence_of_element_located(('xpath', '//span[@class="mr4"]'))).text
     write_text_to_file(f'Текущий аккаунт: {nickname}')
+    balance = wait.until(EC.presence_of_element_located(('xpath', '//span[@class="badge badge-balance"]'))).text
+    Balance = balance
+    driver.get('https://funpay.com/orders/trade?id=&buyer=&state=paid&game=')
+    summ = driver.find_elements('xpath','//div[@class="tc-price text-nowrap tc-seller-sum"]')
+    for i in range(len(summ)):
+        price = driver.find_element('xpath',f'(//div[@class="tc-price text-nowrap tc-seller-sum"])[{i+1}]').text
+        match = re.search(r'\d+', price)
+        number = float(match.group())
+        hold_balance += number
+    Nickname = nickname
     """
-    global hold_balance
-    global Balance
-    global Nickname
+    
+    
+    
     global sales
     global sales_refund
     global sales_open
@@ -141,10 +160,9 @@ def login():
     driver.find_element('xpath', '//a[@class =\"dropdown-toggle user-link\"]').click()
     wait.until(EC.presence_of_element_located(('xpath', '//ul[@class = \'dropdown-menu\']//a[@class=\'user-link-dropdown\']'))).click()
     
-    balance = wait.until(EC.presence_of_element_located(('xpath','//span[@class="badge badge-balance"]'))).text
-    Balance = balance
+    
     write_text_to_file(nickname)
-    Nickname = str(nickname)
+    
     driver.get('https://funpay.com/orders/trade')
     try:
         while True:
@@ -230,14 +248,16 @@ def up_offers():
             driver.find_element('xpath', '//button[@class="btn btn-default btn-block js-lot-raise"]').click() #поднимаем предложения
             #now = datetime.now()
             #current_time = now.strftime("%H:%M:%S")
+            time.sleep(2)
             try:
                 time_slots = driver.find_element('xpath','//div[@class="ajax-alert ajax-alert-danger"]')
+                print('//div[@class="ajax-alert ajax-alert-danger"]')
                 #cul = '[АВТОПОДНЯТИЕ] не удалось поднять лоты: ' + Current_url
                 #write_text_to_file(cul)
             except:
                 try:
-                    wait.until(EC.presence_of_element_located(('xpath', '//div[@class="checkbox"]')))
-                    driver.find_element('xpath','//button[@class="btn btn-primary btn-block js-lot-raise-ex"]').click()
+                    driver.find_element('xpath','//div[@class="ajax-alert ajax-alert-info"]')
+                    print('//div[@class="ajax-alert ajax-alert-info"]')
 
 
                     #//div[@class="checkbox"]
@@ -247,12 +267,17 @@ def up_offers():
                     write_text_to_file(cul1)
                 except:
                     Current_url1 = driver.current_url
+                    print('//div[@class="checkbox"]')
+                    wait.until(EC.presence_of_element_located(('xpath', '//div[@class="checkbox"]')))
+                    driver.find_element('xpath','//button[@class="btn btn-primary btn-block js-lot-raise-ex"]').click()
                     cul1 = '[АВТОПОДНЯТИЕ] Поднял лоты: ' + Current_url1
                     write_text_to_file(cul1)
             driver.back()
             time.sleep(2)
     except:
         write_text_to_file('Лоты не найдены')
+
+
 def auto_reply():
     db = sqlite3.connect('../funpay helper/data/database.db')
     c = db.cursor()
@@ -350,15 +375,16 @@ def autoreply2():
                                 'Не удалось выдать код, попробуйте ещё раз ввести команду')
                             wait.until(EC.presence_of_element_located(
                                 ('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
-                            write_text_to_file(f'Не удалось выдать Steam Guard для покупателя {author.text}')
+                            try:
+                                write_text_to_file(f'Не удалось выдать Steam Guard для покупателя {author.text}')
+                            except:
+                                write_text_to_file('Не удалось выдать Steam Guard для покупателя')
 
 
 
                     elif type == 'Оффлайн':
                         for login in logins:
                             try:
-
-                                driver.find_element('xpath', f'//div[@class="chat-msg-text"][contains(text(), "{login[0]}")]')
                                 auto_send_guard(login[0])
                                 write_text_to_file(f'Выдан код Steam Guard для покупателя {author.text}')
                                 send_message_to_tgbot(f'Выдан код Steam Guard для покупателя {author.text}')
@@ -446,7 +472,7 @@ def CheckFunpayMessage():
         else:
             send_autoreply_text()
     except:
-        print('ошибка')
+        send_autoreply_text()
 def autoRewiew():
     db = sqlite3.connect(database)
     c = db.cursor()
@@ -576,7 +602,7 @@ def Check_lot_type():
     try:
         wait.until(EC.presence_of_element_located(('xpath', '(//a[contains(text(), "заказ")])[last()]'))).click()
         account = driver.find_element('xpath', '//span[@class="secret-placeholder"]').text
-        print(f'выданный аккаунт: {account}')
+
 
         cursor.execute("SELECT login FROM Steam_Guard")
         Logins = cursor.fetchall()
@@ -630,26 +656,7 @@ def Parsing_lots():
             else:
                 None
     except:
-
-
-
-
-        """
-        try:
-            b = driver.find_element('xpath','//div[@data-section-type="lot"]')
-            print(f'2{b.text}')
-        except:
-            try:
-                c = driver.find_element('xpath','//div[@class="offer-tc-container"]')
-                print(f'3{c.text}')
-            except:
-                try:
-                    d = driver.find_element('xpath','//div[@class="tc-desc-text"]')
-                    print(f'4{d.text}')
-                except:
-                    print('это просто пиздец')
-
-"""
+        None
 def FindTime(info):
     db = sqlite3.connect(database)
     c = db.cursor()
@@ -759,8 +766,6 @@ def replace_lots(data):
     c.execute("SELECT Info FROM Rent")
     logins = c.fetchall()
     unique_logins = list({login for login in logins})
-    print(unique_logins)
-    print(len(unique_logins))
     for i in range(len(unique_logins)):
         logins_sort = unique_logins[i][0]
         print(logins_sort)
@@ -774,7 +779,7 @@ def replace_lots(data):
                 driver.get(url[0])
                 wait.until(EC.presence_of_element_located(('xpath', '//div[@class="tc-desc"]')))
                 lots_count = driver.find_elements('xpath', '//div[@class="tc-desc"]')
-                for i in range(len(lots_count)):
+                for i in range(len(lots_count)-1):
                     IsCorrectLot = False
                     driver.find_element('xpath', f'(//div[@class="tc-desc"])[{i + 2}]').click()
                     string_text = wait.until(EC.presence_of_element_located(('xpath', '//textarea[@class="form-control textarea-lot-secrets"]'))).get_attribute("value")
@@ -801,6 +806,11 @@ def replace_lots(data):
                             driver.find_element('xpath','//textarea[@class="form-control textarea-lot-secrets"]').send_keys(convertedList)
                             driver.find_element('xpath', '//label[contains(text(),"Активное")]').click()
                             driver.find_element('xpath', '//button[@type="submit"][text() = "Сохранить"]').click()
+                        #elif IsCorrectLot == False and len(string_text) > 0:
+                            #print('не тот лот')
+                    driver.get(url[0])
+                    time.sleep(1)
+                else:
                     driver.get(url[0])
                     time.sleep(1)
     db.close()
@@ -820,3 +830,6 @@ def FilterTime(text):
         if 'дн' in text or 'день' in text:
             number *= 24
     return number
+def CloseApp():
+    driver.close()
+    sqlite3.connect(database).close()

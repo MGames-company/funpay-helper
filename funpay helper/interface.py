@@ -58,7 +58,7 @@ class UplotsThread(QThread):
                 sleep(1)
                 backend.up_offers()
                 thread_active = 0
-                self.uplots_finished.emit()  # Сообщаем о завершении поднятия лотов
+                self.uplots_finished.emit()
                 time.sleep(7200)
                 if thread_active == 0 and backend.thread_active == 0:
                     thread_active = 1
@@ -81,7 +81,7 @@ class SteamGuardThread(QThread):
 
     def run(self):
         global thread_active
-        #backend.redaction_lots()
+        # backend.redaction_lots()
         while backend.AutoGuard == True:
             if len(backend.RentedAccounts) == 0:
                 time.sleep(6)
@@ -121,11 +121,6 @@ class ParsingThread(QThread):
     def run(self):
         backend.Parsing_lots()
         self.parsing_finished.emit()
-
-
-
-
-
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -134,6 +129,7 @@ class MainWindow(QtWidgets.QWidget):
 
         self.setFixedSize(800, 600)
         self.setStyleSheet('background-color: #1F1F1F; color: #adacab;')
+        self.setWindowTitle("NEGAT1VE FunPay BOT")
         layoutH = QHBoxLayout()
         layoutV = QVBoxLayout()
         self.Isloggin = False
@@ -306,23 +302,23 @@ class MainWindow(QtWidgets.QWidget):
         SellsWidget.setFixedSize(200, 100)
         SellsWidget.setStyleSheet(' background-color: #222222')
         SellsLayoutV = QVBoxLayout()
-        self.Sells = QLabel('Закрыто: ?')
-        self.refund_sell = QLabel('Возврат: ?')
-        self.open_sell = QLabel('Открыто: ?')
+        self.ctg = QLabel('Категорий: ?')
+        self.lcount = QLabel('Лотов: ?')
 
-        SellsLayoutV.addWidget(QLabel('Продажи (всё время)'))
-        SellsLayoutV.addWidget(self.Sells)
-        SellsLayoutV.addWidget(self.refund_sell)
-        SellsLayoutV.addWidget(self.open_sell)
+        SellsLayoutV.addWidget(QLabel('Товары'))
+        SellsLayoutV.addWidget(self.ctg)
+        SellsLayoutV.addWidget(self.lcount)
         SellsWidget.setLayout(SellsLayoutV)
         BalanceWidget = QWidget()
         BalanceWidgetLayout = QVBoxLayout()
         self.Balance = QLabel('Всего: ?')
+        self.holdBalance = QLabel('Холд: ?')
         BalanceWidget.setFixedSize(200, 100)
         BalanceWidget.setStyleSheet(' background-color: #222222')
         BalanceWidget.setLayout(BalanceWidgetLayout)
         BalanceWidgetLayout.addWidget(QLabel('БАЛАНС'))
         BalanceWidgetLayout.addWidget(self.Balance)
+        BalanceWidgetLayout.addWidget(self.holdBalance)
 
         self.InfoGrid.addWidget(SellerWidget, 1, 0)
         self.InfoGrid.addWidget(InfoWidget, 0, 0)
@@ -686,7 +682,6 @@ class MainWindow(QtWidgets.QWidget):
 
         self.stacked_widget.setCurrentIndex(0)
         self.setLayout(layoutV)
-        self.setWindowTitle("My App")
 
         thread_log = threading.Thread(target=self.check_file, args=(file_path,))
         thread_log.start()
@@ -706,7 +701,6 @@ class MainWindow(QtWidgets.QWidget):
         self.stacked_widget.setCurrentIndex(3)
     def showUI5(self):
         self.stacked_widget.setCurrentIndex(4)
-
     def StartParsLots(self):
         self.threatParsing = ParsingThread()
         self.threatParsing.parsing_finished.connect(self.on_parsung_finished)
@@ -731,8 +725,6 @@ class MainWindow(QtWidgets.QWidget):
             conn.commit()
             conn.close()
             backend.send_message_to_tgbot('тест')
-
-
     def SaveCookie(self):
         length_cookie = len(self.CookieText.toPlainText())
         if length_cookie == 0:
@@ -770,7 +762,6 @@ class MainWindow(QtWidgets.QWidget):
             QMessageBox.StandardButton.Ok
         )
         self.close()
-
     def OrderTextSave(self):
         info = self.ChequeTextEdit.toPlainText()
         conn = sqlite3.connect(database)
@@ -876,7 +867,6 @@ class MainWindow(QtWidgets.QWidget):
                     time_ad =  '[' + str(current_time) + ']' + content
                     self.Logtext.append(time_ad)  # выводим содержимое на экран
                     file.truncate(0)  # очищаем файл
-
     def start_login_thread(self):
 
         self.login_to_site.setIcon(QIcon('../funpay helper/data/icons/login2'))
@@ -884,15 +874,18 @@ class MainWindow(QtWidgets.QWidget):
         self.login_thread = LoginThread()
         self.login_thread.login_finished.connect(self.on_login_finished)
         self.login_thread.start()
-
     def on_login_finished(self):
         self.Isloggin = True
-        """
+        self.Balance.setText(f'Всего: {backend.Balance}')
+        self.holdBalance.setText(f'Холд: {backend.hold_balance}')
         self.Nickname.setText(f'Ник: {backend.Nickname}')
+        self.ctg.setText(f'Категорий: {backend.categories_count}')
+        self.lcount.setText(f'Лотов: {backend.offers_count}')
+        """
         self.Sells.setText(f'Закрыто: {len(backend.sales)}')
         self.open_sell.setText(f'Открыто: {len(backend.sales_open)}')
         self.refund_sell.setText(f'Возврат: {len(backend.sales_refund)}')
-        self.Balance.setText(f'Всего: {backend.Balance}')
+        
         """
     def on_parsung_finished(self):
         conn = sqlite3.connect(database)
@@ -985,7 +978,6 @@ class MainWindow(QtWidgets.QWidget):
                 self.Uplots.setIcon(QIcon('../funpay helper/data/icons/logo'))
         else:
             backend.write_text_to_file('Дождитесь входа в аккаунт')
-
     def autoreply (self, checked):
         if self.Isloggin == True:
             #thread_log.start()
@@ -1014,9 +1006,6 @@ class MainWindow(QtWidgets.QWidget):
             else:
                 backend.AutoGuard = False
                 self.auto_send_guard.setIcon(QIcon('../funpay helper/data/icons/Guard'))
-
-        #else:
-            #backend.write_text_to_file('Для выполнения действия войдите в аккаунт')
     def enable_notifications(self,checked):
         if checked:
             self.Notifications.setIcon(QIcon('../funpay helper/data/icons/Notification2'))
@@ -1024,13 +1013,15 @@ class MainWindow(QtWidgets.QWidget):
         else:
             backend.SendNotifications = False
             self.Notifications.setIcon(QIcon('../funpay helper/data/icons/Notification'))
-
     def on_uplots_finished(self):
         # Здесь можно выполнить дополнительные действия после завершения поднятия лотов
         print("Поднятие лотов завершено.")
     def on_autoreply_finished(self):
         # Здесь можно выполнить дополнительные действия после завершения поднятия лотов
         print("Закончился цикл автоответа")
+    def closeEvent(self, a0):
+        print('закрыл прогу')
+        backend.CloseApp()
 database = '../funpay helper/data/database.db'
 def saveData_to_db(text, name_db):
     conn = sqlite3.connect(database)
