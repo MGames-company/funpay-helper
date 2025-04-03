@@ -53,25 +53,49 @@ class UplotsThread(QThread):
         backend.stop = False
         global thread_active
         while backend.stop == False:
-            if thread_active == 0 and backend.thread_active == 0 or thread_active == 1 and backend.thread_active == 0:
-                thread_active = 1
-                sleep(1)
-                backend.up_offers()
-                thread_active = 0
-                self.uplots_finished.emit()
-                time.sleep(7200)
-                if thread_active == 0 and backend.thread_active == 0:
+            allOkay = False
+            try:
+                if backend.IsSendRequests == True:
+                    print('sendrequest')
+                    backend.SendRequest()
+            except:
+                backend.write_text_to_file('Произошла ошибка в отправке запроса в техподдержку')
+            try:
+                if thread_active == 0 and backend.thread_active == 0 or thread_active == 1 and backend.thread_active == 0:
                     thread_active = 1
+                    sleep(1)
+                    while allOkay == False:
+                        try:
+                            backend.up_offers()
+                            allOkay = True
+                        except:
+                            allOkay = False
+                            backend.write_text_to_file('проблема в автоподнятии лотов')
+                            time.sleep(10)
+                    thread_active = 0
+                    self.uplots_finished.emit()
+                    time.sleep(7200)
+                    if thread_active == 0 and backend.thread_active == 0:
+                        thread_active = 1
+            except:
+                backend.write_text_to_file('Произошла ошибка в автоподнятии лотов')
 class AutoreplyThread(QThread):
     auto_reply_finished = pyqtSignal()
     def run(self):
 
         global thread_active
-
         while backend.chat_stop == False:
             if (thread_active == 0 and backend.thread_active == 0) or (thread_active == 2 and backend.thread_active == 0):
+                allOkay = False
                 thread_active = 2
-                backend.auto_reply()
+                while allOkay == False:
+                    try:
+                        backend.auto_reply()
+                        allOkay = True
+                    except:
+                        allOkay = False
+                        time.sleep(10)
+                        backend.write_text_to_file('проблема с автоответом')
                 thread_active = 0
                 time.sleep(5)
                 self.auto_reply_finished.emit()
@@ -196,7 +220,7 @@ class MainWindow(QtWidgets.QWidget):
         self.Auto_reply.clicked.connect(self.autoreply)
         self.Auto_reply.setCheckable(True)
         self.auto_send_guard = QPushButton()
-        self.auto_send_guard.setFixedSize(168, 54)
+
         self.auto_send_guard.setIcon(QIcon('../funpay helper/data/icons/Guard'))
         self.auto_send_guard.setIconSize(QSize(168, 54))
         self.auto_send_guard.clicked.connect(self.send_guard)
@@ -207,15 +231,20 @@ class MainWindow(QtWidgets.QWidget):
         self.Notifications.setIconSize(QSize(168, 54))
         self.Notifications.setCheckable(True)
         self.Notifications.clicked.connect(self.enable_notifications)
+        self.AutoSendRequest = QPushButton()
+        self.AutoSendRequest.setFixedSize(168, 54)
+        self.AutoSendRequest.setCheckable(True)
+        self.AutoSendRequest.clicked.connect(self.SendRequest)
 
         self.MainGrid.addWidget(self.Uplots, 1, 0, 1, 1)
         self.MainGrid.addWidget(self.Auto_reply, 2, 0, 1, 1)
         self.MainGrid.addWidget(self.auto_send_guard, 3, 0, 1, 1)
         self.MainGrid.addWidget(self.Notifications, 4, 0, 1, 1)
+        self.MainGrid.addWidget(self.AutoSendRequest, 7, 0, 1, 1)
         self.MainGrid.addWidget(self.AutoRemindReview, 5, 0, 1,1)
         self.MainGrid.addWidget(self.AutoReview, 6, 0, 1, 1)
-        self.MainGrid.addWidget(self.login_to_site, 7, 0, 1, 1)
-        self.MainGrid.addWidget(self.Logtext, 1, 1, 7, 3)
+        self.MainGrid.addWidget(self.login_to_site, 8, 0, 1, 1)
+        self.MainGrid.addWidget(self.Logtext, 1, 1, 8, 3)
 # ----------------------------------------------------ЗАКАЗЫ-----------------------------------------------------------
         self.OrderLayout = QVBoxLayout()
         orderlayoutH = QHBoxLayout()
@@ -1022,6 +1051,12 @@ class MainWindow(QtWidgets.QWidget):
     def closeEvent(self, a0):
         print('закрыл прогу')
         backend.CloseApp()
+    def SendRequest(self,checked):
+        if checked:
+            backend.IsSendRequests = True
+            print(backend.IsSendRequests)
+        else:
+            backend.IsSendRequests = False
 database = '../funpay helper/data/database.db'
 def saveData_to_db(text, name_db):
     conn = sqlite3.connect(database)

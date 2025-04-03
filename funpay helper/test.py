@@ -1,31 +1,21 @@
 import sqlite3
 import time
 
+class Test(object):
 
-dictinary = {}
-if len(dictinary) == 0:
-    print('пусто')
-dictinary['login'] = [6,0]
-dictinary['login2'] = [4,0]
-dsf = dictinary.keys()
-key = list(dsf)[0]
-print(dictinary)
-for i in range(6):
-    for i in range(len(dictinary)):
-        for i in range(len(dictinary)):
-            keys = list(dictinary.keys())
-            key = keys[i]
-            time2 = dictinary.get(key)[1]
-            d2 = {key:[dictinary.get(key)[0],time2+1]}
-            dictinary.update(d2)
-            print(dictinary)
-        if dictinary.get(key)[1] > dictinary.get(key)[0]:
-            print(key)
-            print('Время вышло')
-            dictinary.pop(key)
-            break
-print(dictinary)
-
+   def __init__(self,id,nick,rang):
+       self.Rang = rang
+       self.Nick = nick
+       self.Id = id
+       pass
+   def goFuckYourself(self):
+       print(f'ID = {self.Id} \nNickname = {self.Nick}\nRang = {self.Rang}')
+   def login(self):
+       time.sleep(1)
+       return 'Успешно вошел %s rang: %s' % (self.Nick,self.Rang)
+mrPenis = Test(1,'Zalupa228','silver')
+mrPenis.goFuckYourself()
+print(mrPenis.login())
 """
 Lot = '✅Аренда REPO ✅🟢STEAM🟢💎1 ЧАС 💎'
 

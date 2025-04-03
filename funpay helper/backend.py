@@ -26,7 +26,7 @@ cursor = connection.cursor()
 cursor.execute(f"SELECT UserData FROM UserProfile")
 userdata = cursor.fetchone()
 options = webdriver.ChromeOptions()
-options.add_argument('--headless')
+#options.add_argument('--headless')
 options.add_argument(f"user-data-dir={userdata[0]}")
 cursor.execute(f"SELECT ProfileDirectory FROM UserProfile")
 userDir = cursor.fetchone()
@@ -57,7 +57,10 @@ SendMessages = False
 offers = []
 IsRemindRewiew = False
 IsAutoRewiew = False
+IsSendRequests = False
 RentedAccounts = {}
+SupportRequests = []
+SupportOldRequests = []
 
 def create_connection(db_file):
     conn = sqlite3.connect(db_file)
@@ -137,8 +140,11 @@ def login():
     categories_count = len(categories)
     nickname = wait.until(EC.presence_of_element_located(('xpath', '//span[@class="mr4"]'))).text
     write_text_to_file(f'Текущий аккаунт: {nickname}')
-    balance = wait.until(EC.presence_of_element_located(('xpath', '//span[@class="badge badge-balance"]'))).text
-    Balance = balance
+    try:
+        balance = wait.until(EC.presence_of_element_located(('xpath', '//span[@class="badge badge-balance"]'))).text
+        Balance = balance
+    except:
+        Balance = 0
     driver.get('https://funpay.com/orders/trade?id=&buyer=&state=paid&game=')
     summ = driver.find_elements('xpath','//div[@class="tc-price text-nowrap tc-seller-sum"]')
     for i in range(len(summ)):
@@ -147,87 +153,18 @@ def login():
         number = float(match.group())
         hold_balance += number
     Nickname = nickname
-    """
-    
-    
-    
-    global sales
-    global sales_refund
-    global sales_open
-    hold_balance = 0
-    write_text_to_file('Запущен процесс входа в аккаунт')
-    
-    driver.find_element('xpath', '//a[@class =\"dropdown-toggle user-link\"]').click()
-    wait.until(EC.presence_of_element_located(('xpath', '//ul[@class = \'dropdown-menu\']//a[@class=\'user-link-dropdown\']'))).click()
-    
-    
-    write_text_to_file(nickname)
-    
-    driver.get('https://funpay.com/orders/trade')
-    try:
-        while True:
-            sales = driver.find_elements('xpath', '//a[@class="tc-item"]')
-            sales_refund = driver.find_elements('xpath', '//a[@class="tc-item warning"]')
-            sales_open = driver.find_elements('xpath', '//a[@class="tc-item info"]')
-            wait.until(EC.presence_of_element_located(('xpath', '//button[@class="btn btn-default dyn-table-continue"]'))).click()
-
-    except:
-        write_text_to_file(str(len(sales_refund)))
-        write_text_to_file(str(len(sales_open)))
-        sells_all = len(sales)
-        write_text_to_file(str(sells_all))
-    #//span[@class="mr4"]
-    """
-    """
-    loggin = ('xpath', '//a[@class = \'menu-item-login\']')
-    driver.find_element(*loggin).click()
-    #'''
-    passwordl = '7Vfnbkmlf13'
-    maill = 'norismaxi12@gmail.com'
-    
-    
-    time.sleep(1)
-    mail = ('xpath', '//input[@name="login"]')
-    driver.find_element(*mail).send_keys(maill)
-    password = ('xpath','//input[@name="password"]')
-    driver.find_element(*password).send_keys(passwordl)
-    time.sleep(1)
-    #driver.find_element('xpath','//div[@class="recaptcha-checkbox-border"]').click()
-    try:
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located(('xpath', '//span[@aria-checked="true"]')))
-    except:
-        print('капча не пройдена')
-    #//div[@style = "display: none; animation-play-state: running; opacity: 1;"]
-    driver.find_element('xpath','//button[@class="btn btn-primary btn-block"]').click()
-    time.sleep(10)
-    """
-    '''
-    mailvk = 'Timon-2007@bk.ru'
-    passwordvk = '7Matilda13'
-    VK = ('xpath','//a[@class = \'social-login-item social-login-item-vk\']')
-    driver.find_element(*VK).click()
-    wait.until(EC.presence_of_element_located(("xpath" , "//label[2]"))).click()
-    mail = ('xpath', '//input[@type = \'text\']')
-    driver.find_element(*mail).send_keys(mailvk)
-    time.sleep(3)
-    driver.find_element('xpath', '//button[@type = \'submit\']').click()
-    wait.until(EC.presence_of_element_located(("xpath" , "//input[@name = \'password\']"))).send_keys(passwordvk)
-    time.sleep(3)
-    driver.find_element('xpath', '//button[@type = \'submit\']').click()
-    time.sleep(7)
-    
-    driver.delete_cookie('golden_key')
-    driver.delete_cookie('PHPSESSID')
-    driver.add_cookie({'name': 'golden_key', 'value': goldenkey_value })
-    driver.add_cookie({'name': 'PHPSESSID', 'value': phpsessid_value })
-    driver.refresh()
-    '''
 AutoreplyText = lastAutoReplyText()
 
 def up_offers():
-    driver.find_element('xpath','//a[@class =\"dropdown-toggle user-link\"]').click()
-    wait.until(EC.presence_of_element_located(('xpath','//ul[@class = \'dropdown-menu\']//a[@class=\'user-link-dropdown\']'))).click()
-
+    try:
+        driver.find_element('xpath','//a[@class =\"dropdown-toggle user-link\"]').click()
+        wait.until(EC.presence_of_element_located(('xpath','//ul[@class = \'dropdown-menu\']//a[@class=\'user-link-dropdown\']'))).click()
+    except:
+        windows = driver.window_handles
+        driver.switch_to.window(windows[0])
+        driver.get('https://funpay.com/')
+        wait.until(EC.presence_of_element_located(('xpath', '//a[@class =\"dropdown-toggle user-link\"]'))).click()
+        wait.until(EC.presence_of_element_located(('xpath', '//ul[@class = \'dropdown-menu\']//a[@class=\'user-link-dropdown\']'))).click()
     try:
         wait.until(EC.presence_of_element_located(('xpath', '//a[@class="btn btn-default btn-plus"]')))
         offers = driver.find_elements('xpath', '//a[@class="btn btn-default btn-plus"]')
@@ -304,7 +241,7 @@ def auto_reply():
             driver.refresh()
         #//a[@class ="contact-item unread"]
     except:
-        time.sleep(5)
+        time.sleep(3)
 
     finally:
         driver.get('https://funpay.com/chat/')
@@ -450,25 +387,35 @@ def CheckFunpayMessage():
         messagel2 = driver.find_element('xpath', '(//div[@class="chat-msg-text"])[last() - 1]').text
         print(messagel2)
         try:
-            Order = driver.find_element('xpath', '(//a[contains(text(), "заказ ")])[last()]').text
+            Order = driver.find_element('xpath', f'(//a[contains(text(), "заказ ")])[last()]').text
+            #(//a[contains(text(), "заказ ")]/following-sibling::a[contains(text(), "DIZNegaT1VE")])[last()]
             print(Order)
         except:
-            Order = 'pizdaaaaaaaaaaaaahuibomsja'
+            Order = 'none'
         try:
             confirm_message = driver.find_element('xpath', '(//a[contains(text(), "заказа")])[last()]').text
             print(confirm_message)
         except:
-            confirm_message = 'pizdaaaaaaaaaaaaahuibomsja'
+            confirm_message = 'nonwe'
         try:
             if IsAutoRewiew == True:
                 autoRewiew()
                 return
         except:
             None
+        try:
+            rewiew = driver.find_element('xpath', '(//a[contains(text(), "заказу")])[last()]').text
+        except:
+            rewiew = 'none'
         if (confirm_message in messagel1  or confirm_message in messagel2) and IsRemindRewiew == True:
             RemindRewiew()
         elif Order in messagel1 or Order in messagel2:
             send_cheque()
+            #type, info = Check_lot_type()
+            #if type == 'Аренда':
+                #redaction_lots()
+        elif rewiew in messagel1:
+            return
         else:
             send_autoreply_text()
     except:
@@ -710,6 +657,7 @@ def FindTime(info):
 
     db.close()
 def redaction_lots():
+    #driver.find_element('xpath', '(//a[contains(text(), "заказ")])[last()]').click()
     db = sqlite3.connect(database)
     c = db.cursor()
     account = driver.find_element('xpath', '//span[@class="secret-placeholder"]').text
@@ -804,6 +752,7 @@ def replace_lots(data):
                             list_logins.append(f'{data}')
                             convertedList = '\n'.join(list_logins)
                             driver.find_element('xpath','//textarea[@class="form-control textarea-lot-secrets"]').send_keys(convertedList)
+                            time.sleep(1)
                             driver.find_element('xpath', '//label[contains(text(),"Активное")]').click()
                             driver.find_element('xpath', '//button[@type="submit"][text() = "Сохранить"]').click()
                         #elif IsCorrectLot == False and len(string_text) > 0:
@@ -833,3 +782,50 @@ def FilterTime(text):
 def CloseApp():
     driver.close()
     sqlite3.connect(database).close()
+def SendRequest():
+    driver.get('https://funpay.com/orders/trade?id=&buyer=&state=paid&game=')
+    wait.until(EC.presence_of_element_located(('xpath','//div[@class="tc-date-left"]')))
+    dates = driver.find_elements('xpath','//div[@class="tc-date-left"]')
+    for i in range(len(dates)):
+        date = wait.until(EC.presence_of_element_located(('xpath',f'(//div[@class="tc-date-left"])[{i+1}]'))).text
+        if 'дн' in date or 'день' in date:
+            text = driver.find_element('xpath',f'(//div[@class="tc-order"])[{i+1}]').text
+            print(SupportRequests)
+            if text not in SupportOldRequests:
+                SupportRequests.append(text)
+                driver.find_element('xpath',f'(//a[@class="tc-item info"])[{i + 1}]').click()
+                time.sleep(1)
+                try:
+                    driver.find_element('xpath','//div[@class="chat-msg-text"][text() = "Пожалуйста подтвердите выполнение заказа"]')
+                    SupportRequests.remove(text)
+                    SupportOldRequests.append(text)
+                    driver.back()
+                except:
+                    wait.until(EC.presence_of_element_located(('xpath', '//textarea[@class="form-control"]'))).send_keys('Пожалуйста подтвердите выполнение заказа')
+                    wait.until( EC.element_to_be_clickable(('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
+                    driver.back()
+                    time.sleep(1)
+
+    print(SupportRequests)
+    for i in range(len(SupportRequests)):
+        driver.get('https://funpay.freshdesk.com/ru-RU/support/tickets/new?ticket_form=%D0%BF%D1%80%D0%BE%D0%B1%D0%BB%D0%B5%D0%BC%D0%B0_%D1%81_%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D0%BE%D0%BC')
+        try:
+            wait.until(EC.presence_of_element_located(('xpath', '(//a[@class="fw-twitter-btn py-12 rounded"])[1]'))).click()
+        except:
+            None
+        wait.until(EC.presence_of_element_located(('xpath', '(//input[@class="form-control "])[1]'))).send_keys(
+            Nickname)
+        driver.find_element('xpath','(//input[@class="form-control "])[2]').send_keys(SupportRequests[i])
+        driver.find_element('xpath','//div[@class="choices__item choices__placeholder choices__item--selectable"]').click()
+        wait.until(EC.presence_of_element_located(('xpath','//div[@id="choices--helpdesk_ticket_custom_field_cf_rand802380_2914071-item-choice-3"]'))).click()
+        wait.until(EC.presence_of_element_located(('xpath','//div[@class="choices__item choices__placeholder choices__item--selectable"]'))).click()
+        wait.until(EC.presence_of_element_located(('xpath', '//div[@data-value="Покупатель забыл подтвердить заказ"]'))).click()
+        driver.find_element('xpath','//div[@contenteditable="true"]').send_keys(f'Подтвердите пожалуйста выполнение заказа {SupportRequests[i]}')
+        driver.execute_script("window.scrollBy(0, 800)")
+        time.sleep(1)
+        wait.until(EC.presence_of_element_located(('xpath','//button[@class="btn fw-primary-button new-ticket-submit-button"]'))).click()
+        SupportOldRequests.append(SupportRequests[i])
+    print(SupportOldRequests)
+    SupportRequests.clear()
+    driver.get('https://funpay.com/')
+    #//div[@class="tc-order"]
