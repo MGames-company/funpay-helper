@@ -1,30 +1,40 @@
 import sqlite3
+import os
+import sqlite3
+import selenium
+from selenium import webdriver
+from selenium.common import NoSuchElementException
+from selenium.webdriver import Keys
+from selenium.webdriver.common.devtools.v85.page import delete_cookie
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
+options = webdriver.ChromeOptions()
+options.add_argument('--disable-blink-features=AutomationControlled')
+options.add_argument("user-data-dir=C:\\Users\\Timon\\AppData\\Local\\Google\\Chrome\\User Data")
+options.add_argument('--profile-directory=Profile 1')
+options.add_argument('--allow-profiles-outside-user-dir')
+options.add_argument('--window-size=1920,1080')
+
+service = Service(executable_path=ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=options)
+wait = WebDriverWait(driver, 10, poll_frequency=1)
+
+database = '../funpay helper/data/database.db'
+driver.get('https://funpay.com/chat/?node=75185998')
+textOrder = driver.find_element('xpath', '(//div[@class="alert alert-with-icon alert-info"])[last()]').text
+time.sleep(1)
+textOrder1 = textOrder.lower()
+print(textOrder1)
 
 
-dictinary = {}
-if len(dictinary) == 0:
-    print('пусто')
-dictinary['login'] = [6,0]
-dictinary['login2'] = [4,0]
-dsf = dictinary.keys()
-key = list(dsf)[0]
-print(dictinary)
-for i in range(6):
-    for i in range(len(dictinary)):
-        for i in range(len(dictinary)):
-            keys = list(dictinary.keys())
-            key = keys[i]
-            time2 = dictinary.get(key)[1]
-            d2 = {key:[dictinary.get(key)[0],time2+1]}
-            dictinary.update(d2)
-            print(dictinary)
-        if dictinary.get(key)[1] > dictinary.get(key)[0]:
-            print(key)
-            print('Время вышло')
-            dictinary.pop(key)
-            break
-print(dictinary)
+
+
+
+
+
 
 """
 Lot = '✅Аренда REPO ✅🟢STEAM🟢💎1 ЧАС 💎'

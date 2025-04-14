@@ -58,10 +58,19 @@ offers = []
 IsRemindRewiew = False
 IsAutoRewiew = False
 RentedAccounts = {}
+order_list = []
 
 def create_connection(db_file):
     conn = sqlite3.connect(db_file)
     return conn
+def LoadBlackList():
+    db = sqlite3.connect(database)
+    c = db.cursor()
+    c.execute("SELECT Text FROM BlackList")
+    Nicknames = c.fetchone()
+    ListNicknames = Nicknames[0].split('\n')
+    db.close()
+    return ListNicknames
 def lastAutoReplyText():
     conn = create_connection(database)
     curs = conn.cursor()
@@ -80,8 +89,29 @@ def Cheque():
     return text2
 def split_text(input_text,nick):
     parts1 = input_text.replace('%НИК%', nick)
-    parts = parts1.split('\n')
-    return parts
+    #parts = parts1.split('\n')
+    return parts1
+def split_cheque(text,nick,price,order):
+    textOrder = driver.find_element('xpath', '(//div[@class="alert alert-with-icon alert-info"])[last()]').text
+    textOrder1 = textOrder.lower()
+    print(textOrder1)
+    db= sqlite3.connect(database)
+    c = db.cursor()
+    c.execute("SELECT Criteria FROM ChequePrefs")
+    criteries = c.fetchall()
+    c.execute("SELECT text FROM ChequePrefs")
+    texts = c.fetchall()
+    for i in range(len(criteries)):
+        print(criteries[i][0])
+        if criteries[i][0] in textOrder1:
+            text += f'\n{texts[i][0]}'
+            print(text)
+
+    part1 = text.replace('%НИК%', nick)
+    order1 = order.split('#')
+    part2 = part1.replace('%ЗАКАЗ%',order1[1])
+    part3 = part2.replace('%ЦЕНА%',price)
+    return part3
 def split_comands(input_text):
     part1 = input_text.replace('\n', '/n')
     parts = part1.split('/n')
@@ -98,29 +128,6 @@ def read_command_from_text():
     with open('../funpay helper/data/Commands.json', 'r') as f:
         commands_text = json.load(f)
         return commands_text
-"""
-def huita():
-    try:
-        with open('D:/programs/development/rofls/.venv/funpay helper/data/Cookie.json', 'r') as file:
-            data = json.load(file)
-    except:
-        with open('D:/programs/development/rofls/.venv/funpay helper/data/Cookie.json', 'a') as file:
-            file.truncate(0)
-            file.write('{}')
-        with open('D:/programs/development/rofls/.venv/funpay helper/data/Cookie.json', 'r') as file:
-            data = json.load(file)
-    goldenkey_value = None
-    phpsessid_value = None
-    for cookie in data:
-        if cookie["name"] == 'golden_key':
-            goldenkey_value = cookie["value"]
-        elif cookie["name"] == 'PHPSESSID':
-            phpsessid_value = cookie["value"]
-    
-    # Выводим значения
-    print("Golden Key Value:", goldenkey_value)
-    print("PHPSESSID Value:", phpsessid_value)
-"""
 def login():
     global Balance
     global hold_balance
@@ -147,81 +154,7 @@ def login():
         number = float(match.group())
         hold_balance += number
     Nickname = nickname
-    """
-    
-    
-    
-    global sales
-    global sales_refund
-    global sales_open
-    hold_balance = 0
-    write_text_to_file('Запущен процесс входа в аккаунт')
-    
-    driver.find_element('xpath', '//a[@class =\"dropdown-toggle user-link\"]').click()
-    wait.until(EC.presence_of_element_located(('xpath', '//ul[@class = \'dropdown-menu\']//a[@class=\'user-link-dropdown\']'))).click()
-    
-    
-    write_text_to_file(nickname)
-    
-    driver.get('https://funpay.com/orders/trade')
-    try:
-        while True:
-            sales = driver.find_elements('xpath', '//a[@class="tc-item"]')
-            sales_refund = driver.find_elements('xpath', '//a[@class="tc-item warning"]')
-            sales_open = driver.find_elements('xpath', '//a[@class="tc-item info"]')
-            wait.until(EC.presence_of_element_located(('xpath', '//button[@class="btn btn-default dyn-table-continue"]'))).click()
 
-    except:
-        write_text_to_file(str(len(sales_refund)))
-        write_text_to_file(str(len(sales_open)))
-        sells_all = len(sales)
-        write_text_to_file(str(sells_all))
-    #//span[@class="mr4"]
-    """
-    """
-    loggin = ('xpath', '//a[@class = \'menu-item-login\']')
-    driver.find_element(*loggin).click()
-    #'''
-    passwordl = '7Vfnbkmlf13'
-    maill = 'norismaxi12@gmail.com'
-    
-    
-    time.sleep(1)
-    mail = ('xpath', '//input[@name="login"]')
-    driver.find_element(*mail).send_keys(maill)
-    password = ('xpath','//input[@name="password"]')
-    driver.find_element(*password).send_keys(passwordl)
-    time.sleep(1)
-    #driver.find_element('xpath','//div[@class="recaptcha-checkbox-border"]').click()
-    try:
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located(('xpath', '//span[@aria-checked="true"]')))
-    except:
-        print('капча не пройдена')
-    #//div[@style = "display: none; animation-play-state: running; opacity: 1;"]
-    driver.find_element('xpath','//button[@class="btn btn-primary btn-block"]').click()
-    time.sleep(10)
-    """
-    '''
-    mailvk = 'Timon-2007@bk.ru'
-    passwordvk = '7Matilda13'
-    VK = ('xpath','//a[@class = \'social-login-item social-login-item-vk\']')
-    driver.find_element(*VK).click()
-    wait.until(EC.presence_of_element_located(("xpath" , "//label[2]"))).click()
-    mail = ('xpath', '//input[@type = \'text\']')
-    driver.find_element(*mail).send_keys(mailvk)
-    time.sleep(3)
-    driver.find_element('xpath', '//button[@type = \'submit\']').click()
-    wait.until(EC.presence_of_element_located(("xpath" , "//input[@name = \'password\']"))).send_keys(passwordvk)
-    time.sleep(3)
-    driver.find_element('xpath', '//button[@type = \'submit\']').click()
-    time.sleep(7)
-    
-    driver.delete_cookie('golden_key')
-    driver.delete_cookie('PHPSESSID')
-    driver.add_cookie({'name': 'golden_key', 'value': goldenkey_value })
-    driver.add_cookie({'name': 'PHPSESSID', 'value': phpsessid_value })
-    driver.refresh()
-    '''
 AutoreplyText = lastAutoReplyText()
 
 def up_offers():
@@ -279,6 +212,8 @@ def up_offers():
 
 
 def auto_reply():
+    windows = driver.window_handles
+    driver.switch_to.window(windows[0])
     db = sqlite3.connect('../funpay helper/data/database.db')
     c = db.cursor()
     c.execute("SELECT login FROM Steam_Guard")
@@ -298,6 +233,22 @@ def auto_reply():
             return
         try:
             chat = wait.until(EC.element_to_be_clickable(('xpath', '//a[@class ="contact-item unread"]')))
+            username = driver.find_element('xpath','//a[@class ="contact-item unread"]//div[@class="media-user-name"]').text
+            print('username:',username)
+            BlackListNicknames = LoadBlackList()
+            print(BlackListNicknames)
+            for Nick in BlackListNicknames:
+                if Nick == username:
+                    if SendNotifications == True:
+                        chat.click()
+                        current_url = driver.current_url
+                        text = f'[УВЕДОМЛЕНИЕ]\n😡Пользователь: {Nick} из вашего чёрного списка прислал сообщение.\n🔗Ссылка на чат: {current_url}'
+                        send_message_to_tgbot(text)
+                    else:
+                        print('pohui')
+                        time.sleep(3)
+                    return
+
             chat.click()
             autoreply2()
         except :
@@ -308,10 +259,12 @@ def auto_reply():
 
     finally:
         driver.get('https://funpay.com/chat/')
+        db.close()
         thread_active = 0
 def autoreply2():
     Commands = read_command_from_text()
     global author
+    global current_url
     try:
         db = sqlite3.connect(database)
         c = db.cursor()
@@ -336,11 +289,10 @@ def autoreply2():
         else:
             if last_message in Commands:
                 command1 = Commands[last_message]
-                command1_send = split_comands(command1)
-                for string in command1_send:
-                    driver.find_element('xpath', '//textarea[@class="form-control"]').send_keys(string)
-                    driver.find_element('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']').click()
-                    driver.refresh()
+                input_element = driver.find_element('xpath', '//textarea[@class="form-control"]')
+                driver.execute_script("arguments[0].value = arguments[1];", input_element, command1)
+                driver.find_element('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']').click()
+                driver.refresh()
                 if last_message == '!продавец' and SendNotifications == True:
                     text = f'👤Покупатель: {author} позвал вас \n 🔗Ссылка на чат: {current_url}'
                     send_message_to_tgbot(text)
@@ -358,6 +310,7 @@ def autoreply2():
                             mail = info2[len(info2) - 1]
                             IsTimeNotEnd = FindTime(info)
                             if IsTimeNotEnd:
+                                send_text('Запущен процесс выдачи кода,подождите пожалуйста')
                                 auto_send_guard_rent(mail)
                                 write_text_to_file(f'Выдан код Steam Guard для покупателя {author}')
                                 text = f'Выдан код Steam Guard для покупателя {author} \n 🔗Ссылка на чат: {current_url}'
@@ -385,6 +338,7 @@ def autoreply2():
                     elif type == 'Оффлайн':
                         for login in logins:
                             try:
+                                send_text('Запущен процесс выдачи кода,подождите пожалуйста')
                                 auto_send_guard(login[0])
                                 write_text_to_file(f'Выдан код Steam Guard для покупателя {author.text}')
                                 send_message_to_tgbot(f'Выдан код Steam Guard для покупателя {author.text}')
@@ -411,11 +365,57 @@ def autoreply2():
                         current_url = driver.current_url
                         text = f'👤Покупатель: {author} хочет получить код \n 🔗Ссылка на чат: {current_url}'
                         send_message_to_tgbot(text)
+            elif last_message == 'код rockstar' and AutoGuard == True:
+                try:
+                    type, info = Check_lot_type()
+                    print(f'Тип:{type}')
+                    if type == 'Аренда':
+                        info2 = info.split('|')
+                        try:
+                            mail = info2[len(info2) - 1]
+                            IsTimeNotEnd = FindTime(info)
+                            if IsTimeNotEnd:
+                                send_text('Запущен процесс выдачи кода,подождите пожалуйста')
+                                auto_send_guard_rent(mail)
+                                write_text_to_file(f'Выдан код Rockstar для покупателя {author}')
+                                text = f'Выдан код Rockstar для покупателя {author} \n 🔗Ссылка на чат: {current_url}'
+                                send_message_to_tgbot(text)
+                            else:
+                                driver.find_element('xpath', '//textarea[@class="form-control"]').send_keys(
+                                    'Время аренды вышло.Если вы считаете что произошла ошибка то воспользуйтесь командой Код ещё раз или позовите продавца командой !продавец')
+                                wait.until(EC.presence_of_element_located(
+                                    ('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
+                        except:
+                            windows = driver.window_handles
+                            driver.switch_to.window(windows[0])
+                            driver.find_element('xpath', '//textarea[@class="form-control"]').send_keys(
+                                'Не удалось выдать код, попробуйте ещё раз ввести команду')
+                            wait.until(EC.presence_of_element_located(
+                                ('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
+                            try:
+                                write_text_to_file(f'Не удалось выдать код Rockstar для покупателя {author.text}')
+                            except:
+                                write_text_to_file('Не удалось выдать код Rockstar для покупателя')
+                    else:
+                        send_text('На этот лот не установлена функция автовыдачи кода, дождитесь продавца')
+                        if SendNotifications == True:
+                            current_url = driver.current_url
+                            text = f'👤Покупатель: {author} хочет получить код \n 🔗Ссылка на чат: {current_url}'
+                            send_message_to_tgbot(text)
+                except:
+                    driver.find_element('xpath', '//textarea[@class="form-control"]').send_keys(
+                        'На этот лот не установлена функция автовыдачи кода, дождитесь продавца')
+                    driver.find_element('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']').click()
+                    if SendNotifications == True:
+                        current_url = driver.current_url
+                        text = f'👤Покупатель: {author} хочет получить код \n 🔗Ссылка на чат: {current_url}'
+                        send_message_to_tgbot(text)
             else:
                 # global AutoreplyText = f'Привет, {name}! /nПродавец ответит тебе в ближайшее время./n[funpay Assistant]'
                 try:
                     CheckFunpayMessage()
                 except:
+                    print('ошибка 2')
                     None
         if SendMessages == True and SendNotifications == True:
             current_url = driver.current_url
@@ -432,43 +432,54 @@ def send_autoreply_text():
     AutoreplyText = lastAutoReplyText()
     text_send = split_text(AutoreplyText, author)
     try:
-        for string in text_send:
-            driver.find_element('xpath', f'//div[text() = "{string}"]')
+        driver.find_element('xpath', f'//div[text() = "{text_send}"]')
 
     except:
         write_text_to_file('Ответил покупателю')
-        for string1 in text_send:
-            wait.until(EC.presence_of_element_located(('xpath', '//textarea[@class="form-control"]'))).send_keys(string1)
-            # time.sleep(1)
-            wait.until(EC.element_to_be_clickable(
-                ('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
-            driver.refresh()
+
+        input_element = wait.until(EC.presence_of_element_located(('xpath', '//textarea[@class="form-control"]')))
+        driver.execute_script("arguments[0].value = arguments[1];", input_element, text_send)
+        wait.until(EC.element_to_be_clickable(
+            ('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
+        driver.refresh()
 def CheckFunpayMessage():
     try:
+        ChequeText = Cheque()
         messagel1 = driver.find_element('xpath', '(//div[@class="chat-msg-text"])[last()]').text
         print(messagel1)
         messagel2 = driver.find_element('xpath', '(//div[@class="chat-msg-text"])[last() - 1]').text
         print(messagel2)
         try:
             Order = driver.find_element('xpath', '(//a[contains(text(), "заказ ")])[last()]').text
+            driver.find_element('xpath', '(//a[contains(text(), "заказ ")])[last()]').click()
+            price = wait.until(EC.presence_of_element_located(('xpath','//span[@class="h1 mr4 text-bold"]'))).text
             print(Order)
         except:
-            Order = 'pizdaaaaaaaaaaaaahuibomsja'
+            Order = 'None'
         try:
             confirm_message = driver.find_element('xpath', '(//a[contains(text(), "заказа")])[last()]').text
             print(confirm_message)
         except:
-            confirm_message = 'pizdaaaaaaaaaaaaahuibomsja'
+            confirm_message = 'None'
         try:
             if IsAutoRewiew == True:
                 autoRewiew()
                 return
         except:
             None
+        try:
+            rewiew = driver.find_element('xpath', '(//a[contains(text(), "заказу")])[last()]').text
+            print(rewiew)
+        except:
+            rewiew = 'none'
         if (confirm_message in messagel1  or confirm_message in messagel2) and IsRemindRewiew == True:
             RemindRewiew()
         elif Order in messagel1 or Order in messagel2:
-            send_cheque()
+            send_cheque(price,Order)
+        elif rewiew in messagel1:
+            None
+        elif ChequeText in messagel1:
+            None
         else:
             send_autoreply_text()
     except:
@@ -479,23 +490,24 @@ def autoRewiew():
     c.execute("SELECT Text FROM Review")
     text = c.fetchone()
     driver.find_element('xpath', '(//a[contains(text(), "заказу")])[last()]').click()
-    rewiew_message = driver.find_element('xpath', '//textarea[@name="text"]')
-    driver.find_element('xpath', '//textarea[@name="text"]').send_keys(f'{text[0]}')
+    input_element = driver.find_element('xpath', '//textarea[@name="text"]')
+    driver.execute_script("arguments[0].value = arguments[1];", input_element, text[0])
     driver.find_element('xpath', '//button[@data-action="save"]').click()
     db.close()
-def send_cheque():
+def send_cheque(price,order):
     ChequeText = Cheque()
-    cheque_send = split_text(ChequeText, author)
+    cheque_send = split_cheque(ChequeText, author,price,order)
     try:
-        for string in cheque_send:
-            driver.find_element('xpath', f'//div[text() = "{string}"]')
+        driver.find_element('xpath', f'//div[text() = "{cheque_send}"]')
     except:
-        for string1 in cheque_send:
-            wait.until(EC.presence_of_element_located(
-                ('xpath', '//textarea[@class="form-control"]'))).send_keys(string1)
-            wait.until(EC.element_to_be_clickable(
-                ('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
-            driver.refresh()
+        input_element = wait.until(EC.presence_of_element_located(('xpath', '//textarea[@class="form-control"]')))
+        driver.execute_script("arguments[0].value = arguments[1];", input_element, cheque_send)
+        wait.until(EC.element_to_be_clickable(
+            ('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()
+        send_message_to_tgbot(f'[ПРОДАЖА]\n👤Покупатель:{author}\n💲Сумма: {price}₽\n🔗Ссылка на чат: {current_url}')
+        type, info = Check_lot_type()
+        if type == 'Аренда':
+            redaction_lots()
 def RemindRewiew():
     text_remind = 'Если не затруднит,оставьте пожалуйста отзыв. Буду очень рад)'
     wait.until(EC.presence_of_element_located(
@@ -577,6 +589,44 @@ def auto_send_guard_rent(mail):
         db.close()
     except:
         print('!!!ошибка!!!')
+        driver.switch_to.window(windows[0])
+    db.close()
+def auto_send_rockstar_code(mail):
+    windows = driver.window_handles
+    if len(windows) < 2:
+        driver.execute_script("window.open('https://e.mail.ru/inbox', '_blank');")
+        windows = driver.window_handles
+        driver.switch_to.window(windows[1])
+        time.sleep(2)
+    else:
+        windows = driver.window_handles
+        driver.switch_to.window(windows[1])
+        driver.get('https://e.mail.ru/inbox')
+
+    db = sqlite3.connect('../funpay helper/data/database.db')
+    c = db.cursor()
+    time.sleep(3)
+    try:
+        wait.until(EC.presence_of_element_located(('xpath',f'//img[@alt="{mail}"]')))
+    except:
+        driver.find_element('xpath','//div[@class="ph-project__user-icon svelte-ttryjx"]').click()
+        wait.until(EC.presence_of_element_located(('xpath',f'//div[text() = "{mail}"]'))).click()
+    time.sleep(3)
+    try:
+
+        wait.until(EC.presence_of_element_located(('xpath','(//span[text() = "Ваш проверочный код Rockstar Games"] | //span[text() = "Your Rockstar Games verification code"])')))
+        s = driver.find_element('xpath','(//span[text() = "Ваш проверочный код Rockstar Games"] | //span[text() = "Your Rockstar Games verification code"])')
+        if s:
+            s.click()
+        guard = wait.until(EC.presence_of_element_located(('xpath', '//span[@class="rc-2fa-code_mr_css_attr rc-2fa-code-override_mr_css_attr"]'))).text
+        driver.switch_to.window(windows[0])
+        text = f'Код для входа в аккаунт rockstar: {guard}'
+        driver.find_element('xpath', '//textarea[@class="form-control"]').send_keys(text)
+        driver.find_element('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']').click()
+        db.close()
+    except:
+        print('!!!ошибка!!!')
+        driver.switch_to.window(windows[0])
     db.close()
 def send_message_to_tgbot(message):
     conn = sqlite3.connect(database)
@@ -613,8 +663,10 @@ def Check_lot_type():
                 return type, info
 
         h = driver.find_element('xpath','//div[@class="param-item"]/h5[text() = "Краткое описание"]/following-sibling::div').text
+        print(h)
         cursor.execute("SELECT Lot FROM Rent")
         Lots = cursor.fetchall()
+        print(Lots)
         for Lot in Lots:
             if Lot[0] in h:
                 print(f"Это аренда, {Lot[0]}")
@@ -666,40 +718,49 @@ def FindTime(info):
     try:
         c.execute(f"SELECT Time FROM Rent WHERE Info = '{info}'")
         text1 = c.fetchone()
-        text = driver.find_element('xpath', '//span[@class="text-nowrap"]')
+        text = driver.find_element('xpath', '//span[@class="text-nowrap"]').text
         match = re.search(r'\d+', text1[0])
         if match:
             number = int(match.group())
             # Умножаем число на 60, если в тексте есть слово "час"
             if 'час' in text1[0]:
                 number *= 1
-            if 'дн' in text1[0]:
+            elif 'дн' in text1[0]:
                 number *= 24
+            else:
+                number *= 0
         else:
             number = 1
             if 'час' in text1[0]:
                 number *= 1
-            if 'дн' in text1[0] or 'день' in text1[0]:
+            elif 'дн' in text1[0] or 'день' in text1[0]:
                 number *= 24
+            else:
+                number *= 0
         print(number)
-        match2 = re.search(r'\d+', text.text)
+        match2 = re.search(r'\d+', text)
         if match2:
             number2 = int(match2.group())
-            # Умножаем число на 60, если в тексте есть слово "час"
-            if 'мин' in text.text:
+            if 'мин' in text:
                 number2 = 0
-            if 'час' in text.text:
+            elif 'час' in text:
                 number2 *= 1
-            if 'дн' in text.text:
+            elif 'дн' in text:
                 number2 *= 24
+            elif 'сек' in text:
+                number2 = 0
         else:
             number2 = 1
-            if 'мин' in text.text:
+            if 'мин' in text:
                 number2 = 0
-            if 'час' in text.text:
+            elif 'час' in text:
                 number2 *= 1
-            if 'дн' in text.text or 'день' in text.text:
+            elif 'дн' in text or 'день' in text:
                 number2 *= 24
+            elif 'сек' in text:
+                number2 = 0
+        if number2 > 24:
+            number2 = 0
         result = number >= number2
         print(number2)
         print(result)
@@ -712,54 +773,58 @@ def FindTime(info):
 def redaction_lots():
     db = sqlite3.connect(database)
     c = db.cursor()
-    account = driver.find_element('xpath', '//span[@class="secret-placeholder"]').text
-    lot_name = driver.find_element('xpath',
-                                   '//div[@class="param-item"]/h5[text() = "Краткое описание"]/following-sibling::div').text
-    print(account)
+    accounts = driver.find_elements('xpath', '//span[@class="secret-placeholder"]')
+    list_accounts = []
+    for i in range(len(accounts)):
+        account = wait.until(EC.presence_of_element_located(('xpath', f'(//span[@class="secret-placeholder"])[{i+1}]'))).text
+        list_accounts.append(account)
+    print(list_accounts)
+    lot_name = wait.until(EC.presence_of_element_located(('xpath','//div[@class="param-item"]/h5[text() = "Краткое описание"]/following-sibling::div'))).text
     print(lot_name)
     c.execute(f"SELECT Time FROM Rent WHERE Lot == '{lot_name}'")
     Time = c.fetchone()
+    print(Time[0])
     c.execute(f"SELECT URL FROM Rent WHERE Lot == '{lot_name}'")
     url = c.fetchone()
+    print(url[0])
     driver.get(url[0])
+    wait.until(EC.presence_of_element_located(('xpath', '//div[@class="tc-desc"]')))
     lots_count = driver.find_elements('xpath', '//div[@class="tc-desc"]')
     time1 = FilterTime(Time[0])
-    if account in RentedAccounts:
-        db.close()
-        return
-    else:
-        RentedAccounts[account] = [time1, 0]
-        print(RentedAccounts)
-        for i in range(len(lots_count)):
-            IsCorrectLot = False
-            try:
-                driver.find_element('xpath', f'(//div[@class="tc-desc"])[{i+2}]').click()
-                string_text = wait.until(EC.presence_of_element_located(('xpath','//textarea[@class="form-control textarea-lot-secrets"]'))).get_attribute("value")
-                print(string_text)
-                z = string_text.split('\n')
-                for v in z:
-                    if account == v:
-                        z.remove(v)
-                        IsCorrectLot = True
-                print(len(z))
-                if len(z) > 0 and IsCorrectLot == True:
-                    convertList = '\n'.join(z)
-                    driver.find_element('xpath', '//textarea[@class="form-control textarea-lot-secrets"]').clear()
-                    driver.find_element('xpath', '//textarea[@class="form-control textarea-lot-secrets"]').send_keys(convertList)
-                    driver.find_element('xpath','//button[@type="submit"][text() = "Сохранить"]').click()
-                elif len(z) == 0 and IsCorrectLot == True:
-                    driver.find_element('xpath', '//textarea[@class="form-control textarea-lot-secrets"]').clear()
-                    driver.find_element('xpath','//label[contains(text(),"Активное")]').click()
-                    driver.find_element('xpath', '//button[@type="submit"][text() = "Сохранить"]').click()
-                else:
-                    driver.back()
-                time.sleep(1)
-            except:
-                print('фиаско')
-                time.sleep(1)
-                driver.get(url[0])
-        send_message_to_tgbot(f'Убрал из автовыдачи аккаунт {account}, можно выставлять через {Time[0]}')
-        db.close()
+    for account in list_accounts:
+        if account in RentedAccounts:
+            db.close()
+        else:
+            RentedAccounts[account] = [time1, 0]
+            print(RentedAccounts)
+            for i in range(len(lots_count)):
+                IsCorrectLot = False
+                try:
+                    driver.find_element('xpath', f'(//div[@class="tc-desc"])[{i+2}]').click()
+                    string_text = wait.until(EC.presence_of_element_located(('xpath','//textarea[@class="form-control textarea-lot-secrets"]'))).get_attribute("value")
+                    z = string_text.split('\n')
+                    for v in z:
+                        if account == v:
+                            z.remove(v)
+                            IsCorrectLot = True
+                    if len(z) > 0 and IsCorrectLot == True:
+                        convertList = '\n'.join(z)
+                        driver.find_element('xpath', '//textarea[@class="form-control textarea-lot-secrets"]').clear()
+                        driver.find_element('xpath', '//textarea[@class="form-control textarea-lot-secrets"]').send_keys(convertList)
+                        driver.find_element('xpath','//button[@type="submit"][text() = "Сохранить"]').click()
+                    elif len(z) == 0 and IsCorrectLot == True:
+                        driver.find_element('xpath', '//textarea[@class="form-control textarea-lot-secrets"]').clear()
+                        driver.find_element('xpath','//label[contains(text(),"Активное")]').click()
+                        driver.find_element('xpath', '//button[@type="submit"][text() = "Сохранить"]').click()
+                    else:
+                        driver.back()
+                    time.sleep(1)
+                except:
+                    print('фиаско')
+                    time.sleep(1)
+                    driver.get(url[0])
+            send_message_to_tgbot(f'Убрал из автовыдачи аккаунт {account}, можно выставлять через {Time[0]}')
+            db.close()
 def replace_lots(data):
     db = sqlite3.connect(database)
     c = db.cursor()
@@ -775,7 +840,6 @@ def replace_lots(data):
             if log in data:
                 c.execute(f"SELECT URL FROM Rent WHERE Info == '{logins_sort}'")
                 url = c.fetchone()
-                print(url[0])
                 driver.get(url[0])
                 wait.until(EC.presence_of_element_located(('xpath', '//div[@class="tc-desc"]')))
                 lots_count = driver.find_elements('xpath', '//div[@class="tc-desc"]')
@@ -810,9 +874,12 @@ def replace_lots(data):
                             #print('не тот лот')
                     driver.get(url[0])
                     time.sleep(1)
-                else:
-                    driver.get(url[0])
-                    time.sleep(1)
+                try:
+                    driver.find_element('xpath', '//a[@class="tc-item warning"]').click()
+                    wait.until(EC.presence_of_element_located(('xpath', '//label[contains(text(),"Активное")]'))).click()
+                except:
+                    None
+
     db.close()
 def FilterTime(text):
     match1 = re.search(r'\d+', text)
@@ -833,3 +900,49 @@ def FilterTime(text):
 def CloseApp():
     driver.close()
     sqlite3.connect(database).close()
+def IfError():
+    windows = driver.window_handles
+    driver.switch_to.window(windows[0])
+    driver.refresh()
+def ConfirmOrders():
+    driver.get('https://funpay.com/orders/trade?id=&buyer=&state=paid&game=')
+    wait.until(EC.presence_of_element_located(('xpath','//div[@class="tc-date-left"]')))
+    orders = driver.find_elements('xpath','//div[@class="tc-date-left"]')
+    print(orders)
+    print(len(orders))
+    for i in range(len(orders)):
+        order_time = driver.find_element('xpath',f'(//div[@class="tc-date-left"])[{i+1}]').text
+        order = driver.find_element('xpath',f'(//div[@class="tc-order"])[{i+1}]').text
+        if 'день' in order_time or 'дн' in order_time or 'нед' in order_time or 'месяц' in order_time:
+            driver.find_element('xpath',f'(//a[@class="tc-item info"])[{i}]').click()
+            try:
+                time.sleep(1)
+                driver.find_element('xpath','//div[@class="chat-msg-text"][text() = "подтвердите выполнение заказа"]')
+                order_list.append(order)
+                driver.back()
+            except:
+                send_text('подтвердите выполнение заказа')
+                order_list.append(order)
+                driver.back()
+    print(order_list)
+    if len(order_list) > 0:
+        driver.get('https://funpay.freshdesk.com/ru-RU/support/tickets/new?ticket_form=%D0%BF%D1%80%D0%BE%D0%B1%D0%BB%D0%B5%D0%BC%D0%B0_%D1%81_%D0%B7%D0%B0%D0%BA%D0%B0%D0%B7%D0%BE%D0%BC')
+        wait.until(EC.presence_of_element_located(('xpath','//a[@class="fw-twitter-btn py-12 rounded"]'))).click()
+        wait.until(EC.presence_of_element_located(('xpath', '//input[@id="helpdesk_ticket_custom_field_cf_your_funpay_username_login_name_2914071"]'))).send_keys(Nickname)
+        wait.until(EC.presence_of_element_located(('xpath', '//input[@id="helpdesk_ticket_custom_field_cf_order_number_2914071"]'))).send_keys(order_list[1])
+        wait.until(EC.presence_of_element_located(('xpath', '(//div[@data-type="select-one"])[2]'))).click()
+        wait.until(EC.presence_of_element_located(('xpath', '//div[@data-value="Продавец"]'))).click()
+        wait.until(EC.presence_of_element_located(('xpath', '//div[@class="choices__item choices__placeholder choices__item--selectable"]'))).click()
+        wait.until(EC.presence_of_element_located(('xpath', '//div[@data-value="Покупатель забыл подтвердить заказ"]'))).click()
+        text = " ".join(map(str,order_list))
+        print(text)
+        driver.execute_script("window.scrollBy(0, 800)")
+        time.sleep(1)
+        wait.until(EC.presence_of_element_located(('xpath', '//div[@contenteditable="true"]'))).send_keys(f'Пожалуйста подтвердите выполнение заказов: {text}')
+        driver.find_element('xpath','(//button[@type="submit"])[2]').click()
+    #//div[@class="fr-element fr-view"]
+    #подтвердите выполнение заказа
+def send_text(text):
+    input_element = driver.find_element('xpath', '//textarea[@class="form-control"]')
+    driver.execute_script("arguments[0].value = arguments[1];", input_element, text)
+    wait.until(EC.element_to_be_clickable(('xpath', '//button[@type="submit"]/i[@class = \'fa fa-arrow-right\']'))).click()

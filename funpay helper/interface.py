@@ -55,15 +55,25 @@ class UplotsThread(QThread):
         while backend.stop == False:
             if thread_active == 0 and backend.thread_active == 0 or thread_active == 1 and backend.thread_active == 0:
                 thread_active = 1
+                allok = False
                 sleep(1)
-                backend.up_offers()
+                while allok == False:
+                    try:
+                        backend.up_offers()
+                        allok = True
+                    except:
+                        allok = False
+                        try:
+                            backend.IfError()
+                        except:
+                            print('тут поможет только бог')
+                        time.sleep(5)
                 thread_active = 0
                 self.uplots_finished.emit()
                 time.sleep(7200)
                 if thread_active == 0 and backend.thread_active == 0:
                     thread_active = 1
 class AutoreplyThread(QThread):
-    auto_reply_finished = pyqtSignal()
     def run(self):
 
         global thread_active
@@ -71,10 +81,16 @@ class AutoreplyThread(QThread):
         while backend.chat_stop == False:
             if (thread_active == 0 and backend.thread_active == 0) or (thread_active == 2 and backend.thread_active == 0):
                 thread_active = 2
-                backend.auto_reply()
+                allok = False
+                while allok == False:
+                    try:
+                        backend.auto_reply()
+                        allok = True
+                    except:
+                        allok = False
+                        time.sleep(5)
                 thread_active = 0
-                time.sleep(5)
-                self.auto_reply_finished.emit()
+                time.sleep(2)
             else:
                 time.sleep(5)
 class SteamGuardThread(QThread):
@@ -115,12 +131,30 @@ class SteamGuardThread(QThread):
                     thread_active = 3
                 else:
                     time.sleep(4)
-
 class ParsingThread(QThread):
     parsing_finished = pyqtSignal()
     def run(self):
-        backend.Parsing_lots()
-        self.parsing_finished.emit()
+        success = False
+        while success == False:
+            if (thread_active == 0 and backend.thread_active == 0):
+                thread_active = 4
+                backend.Parsing_lots()
+                success = True
+                thread_active = 0
+                self.parsing_finished.emit()
+            else:
+                time.sleep(1)
+class ConfirmOrderThread(QThread):
+    def run(self):
+        success = False
+        while success == False:
+            if (thread_active == 0 and backend.thread_active == 0):
+                thread_active = 4
+                backend.ConfirmOrders()
+                success = True
+                thread_active = 0
+            else:
+                time.sleep(2)
 class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -256,20 +290,60 @@ class MainWindow(QtWidgets.QWidget):
             db.close()
         except:
             db.close()
+
+        self.ChequeTable = QTableWidget()
+        self.ChequeTable.setColumnCount(2)
+        self.ChequeTable.setRowCount(10)
+        self.ChequeTable.horizontalHeaderItem(0)
+        self.ChequeTable.horizontalHeaderItem(1)
+        self.ChequeTable.setHorizontalHeaderLabels(["Если лот содержит слово/фразу:", "То добавить в чек фразу:"])
+        self.ChequeTable.setColumnWidth(0, 400)
+        self.ChequeTable.setColumnWidth(1, 400)
+        self.ChequeTable.setMinimumSize(720, 250)
+        self.ChequeTable.setCornerButtonEnabled(False)
+        self.ChequeTable.setStyleSheet("""
+                                    QTableWidget {
+                                        background-color: #353535;  /* Цвет фона */
+                                    }
+
+                                """)
+        self.ChequeTable.setStyleSheet("""
+                    QTableCornerButton::section {
+                    background: #353535;
+                    }
+                """)
+        self.ChequeTable.horizontalHeader().setStyleSheet(
+            "QHeaderView::section { background-color: #353535; color: #adacab; }")
+        self.ChequeTable.verticalHeader().setStyleSheet(
+            "QHeaderView::section { background-color: #353535; color: #adacab; }")
+        LotsItems = self.db_getinfo('ChequePrefs')
+        lengt = len(LotsItems)
+        for i in range(lengt):
+            self.ChequeTable.setItem(i, 0, QTableWidgetItem(LotsItems[i][0]))
+            self.ChequeTable.setItem(i, 1, QTableWidgetItem(LotsItems[i][1]))
+            print(LotsItems[i][0])
+            print(LotsItems[i][1])
+
+
         ChequeWidget.setLayout(chequelayoutV)
         chequelayoutV.addLayout(chequelayoutH)
         self.ConfirmOrderText = QPushButton('СОХРАНИТЬ')
         self.ConfirmOrderText.clicked.connect(self.OrderTextSave)
+        self.button = QPushButton('Отправить заказы на подтверждение')
+        self.button.clicked.connect(self.ConfirmOrders)
         self.OrderLayout.addLayout(orderlayoutH)
         orderlayoutH.addLayout(orderlayoutVleft)
+        self.OrderLayout.addWidget(self.button)
         self.OrderLayout.addWidget(ChequeWidget)
         chequelayoutH.addWidget(QLabel('ЧЕК'))
         chequelayoutH.addWidget(self.Cheque_infobutton)
 
         chequelayoutV.addWidget(self.ChequeTextEdit)
+        chequelayoutV.addWidget(self.ChequeTable)
 
 
         orderlayoutVleft.addWidget(self.ConfirmOrderText)
+
         orderlayoutVleft.addStretch()
 #----------------------------------------------------ИНФОРМАЦИЯ-----------------------------------------------------------
         self.InfoGrid = QGridLayout()
@@ -657,10 +731,37 @@ class MainWindow(QtWidgets.QWidget):
         NotificationLayout.addWidget(self.NotificationButton)
         NotificationWidget.setLayout(NotificationLayout)
 
+
+
+        BlackListWidget = QWidget()
+        BlackListWidget.setStyleSheet("background-color: #222222")
+        BlackListWidget.setFixedSize(300, 200)
+        BlackListLayout = QVBoxLayout()
+        BlackListHLayout = QHBoxLayout()
+        self.blacklistEdit = QTextEdit()
+        ConfirmBlackListButton = QPushButton('СОХРАНИТЬ')
+        ConfirmBlackListButton.clicked.connect(self.BlackListSave)
+        BlackListWidget.setLayout(BlackListLayout)
+        BlackListLayout.addLayout(BlackListHLayout)
+        BlackListHLayout.addWidget(QLabel('Чёрный Список'))
+        BlackListLayout.addWidget(self.blacklistEdit)
+        BlackListLayout.addWidget(ConfirmBlackListButton)
+        try:
+            conn = sqlite3.connect(database)
+            cursor = conn.cursor()
+            cursor.execute("SELECT Text FROM BlackList")
+            t = cursor.fetchone()
+            self.blacklistEdit.setText(t[0])
+            conn.close()
+        except:
+            conn.close()
+
+        SettingsGrid.addWidget(BrowserProfileWidget, 0, 0)
         SettingsGrid.addWidget(NotificationWidget,0,1)
-        SettingsGrid.addWidget(BrowserProfileWidget, 0,0)
+        SettingsGrid.addWidget(BlackListWidget, 1, 0)
         SettingsGrid.addWidget(ReviewWidget, 1, 1)
         SettingsGridWidget.setLayout(SettingsGrid)
+
 
 
         # Создание макета
@@ -769,6 +870,19 @@ class MainWindow(QtWidgets.QWidget):
         cursor.execute(f"""CREATE TABLE IF NOT EXISTS OrderCheque (Text TEXT NOT NULL)""")
         cursor.execute(f"DELETE FROM OrderCheque")
         cursor.execute("INSERT INTO OrderCheque VALUES (?)",(info,))
+
+        cursor.execute(f"""CREATE TABLE IF NOT EXISTS ChequePrefs (Criteria TEXT NOT NULL,text TEXT NOT NULL)""")
+        cursor.execute(f"DELETE FROM ChequePrefs")
+        row_count = self.ChequeTable.rowCount()
+        for row in range(row_count):
+            try:
+                key = self.ChequeTable.item(row, 0).text()
+                if key:
+                    item = self.ChequeTable.item(row, 1).text()
+                    print(key, item)
+                    cursor.execute(f"INSERT INTO ChequePrefs VALUES (?,?)", (key, item))
+            except:
+                None
         conn.commit()
         conn.close()
         QMessageBox.information(
@@ -777,6 +891,9 @@ class MainWindow(QtWidgets.QWidget):
             'Данные сохранены',
             QMessageBox.StandardButton.Ok
         )
+    def ConfirmOrders(self):
+        self.Orderconfirm = ConfirmOrderThread()
+        self.Orderconfirm.start()
     def RewiewTextSave(self):
         text = self.ReviewTextEdit.toPlainText()
         conn = sqlite3.connect(database)
@@ -784,6 +901,15 @@ class MainWindow(QtWidgets.QWidget):
         cursor.execute(f"""CREATE TABLE IF NOT EXISTS Review (Text TEXT NOT NULL)""")
         cursor.execute(f"DELETE FROM Review")
         cursor.execute("INSERT INTO Review VALUES (?)", (text,))
+        conn.commit()
+        conn.close()
+    def BlackListSave(self):
+        text = self.blacklistEdit.toPlainText()
+        conn = sqlite3.connect(database)
+        cursor = conn.cursor()
+        cursor.execute(f"""CREATE TABLE IF NOT EXISTS BlackList (Text TEXT NOT NULL)""")
+        cursor.execute(f"DELETE FROM BlackList")
+        cursor.execute("INSERT INTO BlackList VALUES (?)", (text,))
         conn.commit()
         conn.close()
     def editTextSave(self):
@@ -985,7 +1111,6 @@ class MainWindow(QtWidgets.QWidget):
                 backend.chat_stop = False
                 self.Auto_reply.setIcon(QIcon('../funpay helper/data/icons/autoreply2'))
                 self.Auto_reply_thread = AutoreplyThread()
-                self.Auto_reply_thread.auto_reply_finished.connect(self.on_autoreply_finished)
                 self.Auto_reply_thread.start()
             else:
                 backend.chat_stop = True
@@ -1016,9 +1141,6 @@ class MainWindow(QtWidgets.QWidget):
     def on_uplots_finished(self):
         # Здесь можно выполнить дополнительные действия после завершения поднятия лотов
         print("Поднятие лотов завершено.")
-    def on_autoreply_finished(self):
-        # Здесь можно выполнить дополнительные действия после завершения поднятия лотов
-        print("Закончился цикл автоответа")
     def closeEvent(self, a0):
         print('закрыл прогу')
         backend.CloseApp()
